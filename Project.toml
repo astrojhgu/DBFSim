@@ -1,0 +1,14 @@
+name = "DBFSim"
+uuid = "d126dd3e-6da0-4a14-bad8-90f4b0174b23"
+authors = ["Gu Junhua <jhgu@nao.cas.cn>"]
+version = "0.1.0"
+
+[deps]
+AstroLib = "c7932e45-9af1-51e7-9da9-f004cd3a462b"
+DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
+FFTW = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+ThreadTools = "dbf13d8f-d36e-4350-8970-f3a99faba1a8"
+WCS = "15f3aee2-9e10-537f-b834-a6fb8bdb944d"
