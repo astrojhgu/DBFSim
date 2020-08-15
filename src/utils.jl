@@ -1,7 +1,7 @@
 module utils
     using WCS
     using AstroLib
-    
+    using DelimitedFiles
     
     export meshgrid
 
@@ -120,8 +120,16 @@ module utils
         c=reshape(g, naz*nel)
         c./=maximum(c)
         x,y,z,indices,c
-
     end
 
-    
+    function load_ant_loc(fname)
+        al=readdlm(fname)
+        @assert(size(al, 2)==2 || size(al, 2)==3)
+        if size(al, 2)==2
+            [al zeros(size(al, 1), 1)]
+        else
+            al
+        end
+    end
+   
 end

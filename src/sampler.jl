@@ -1,5 +1,9 @@
 module sampler
     using FFTW
+    using .. utils:azel2xyz
+    const light_speed=2.99792458e8
+    const sample_interval=2.5e-9
+
     struct DownSampler
         ratio::Int
         filter_coeff_rev::Vector{Float64}
@@ -19,4 +23,28 @@ module sampler
             sum(signal[i:i+tap-1].*ds.filter_coeff_rev)
         end
     end
+
+    function array_output(signal::Vector, ant_loc::AbstractMatrix, ds::DownSampler, az, el)
+        dir=azel2xyz(az, el)
+        delays=map(eachrow(ant_loc)) do p
+            Int(round(p'*dir/light_speed/sample_interval*ds.ratio))
+        end
+        delays.-=minimum(delays)
+
+        result=Vector(map(delays) do d
+            sample(signal, ds, d)
+        end)
+
+        output_lengths=map(result) do r
+            length(r)
+        end
+
+        min_len=minimum(output_lengths)
+        result=map(result) do r
+            r[begin:min_len]
+        end
+
+        hcat(result...)
+    end
+
 end
