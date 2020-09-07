@@ -3,7 +3,7 @@ module utils
     using AstroLib
     using DelimitedFiles
     
-    export meshgrid
+    export meshgrid, azel2xyz
 
     function meshgrid(x, y)
         X = [i for i in x, j in 1:length(y)]
