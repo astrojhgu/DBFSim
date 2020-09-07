@@ -5,7 +5,7 @@ module Pfb
     using FFTW
     import Base:copy, deepcopy
 
-    export filter_signal!, add_delay, coeff, FilterBank, Analyzer, Synthesizer, analyze!, synthesize!, Filter
+    export filter_signal!, add_delay, coeff, FilterBank, Analyzer, Synthesizer, analyze!, synthesize!, Filter, corr
 
     default_coeffs=Dict(8=>4.853,
     10=>4.775,

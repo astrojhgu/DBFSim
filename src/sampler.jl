@@ -1,4 +1,6 @@
 module sampler
+    export sample
+
     using FFTW
     using .. utils:azel2xyz
     const light_speed=2.99792458e8
