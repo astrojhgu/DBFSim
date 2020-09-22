@@ -32,7 +32,7 @@ module sampler
             Int(round(p'*dir/light_speed/sample_interval*ds.ratio))
         end
         delays.-=minimum(delays)
-        println(delays)
+        #println(delays)
 
         result=Vector(map(delays) do d
             sample(signal, ds, d)

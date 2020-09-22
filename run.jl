@@ -3,7 +3,7 @@ Pkg.activate(".")
 using DBFSim
 using DelimitedFiles
 using Serialization
-using PyPlot
+#using PyPlot
 using Statistics
 using FFTW
 using Serialization
