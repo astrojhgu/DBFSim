@@ -50,7 +50,7 @@ module Pfb
 
     struct Filter{T<:AbstractFloat, U}
         coeff_rev::Vector{T}
-        initial_state::Vector{U}
+        initial_state::Vector{U} #U can be different from T for complex signal
     end
 
     function copy(f::Filter{T, U})::Filter{T, U} where {T<:AbstractFloat, U}
@@ -67,22 +67,30 @@ module Pfb
         filters_odd::Vector{Filter{T, Complex{T}}}
     end
 
+    function deepcopy(fb::FilterBank{T})::FilterBank{T} where {T<:AbstractFloat}
+        FilterBank(deepcopy(fb.filters_even), deepcopy(fb.filters_odd))
+    end
+
+    function copy(fb::FilterBank{T})::FilterBank{T} where {T<:AbstractFloat}
+        FilterBank(deepcopy(fb.filter_even), deepcopy(fb.filter_odd))
+    end
+
     function Filter(coeff::AbstractVector{T}, u::Type{U})::Filter{T} where {T<:AbstractFloat, U}
         initial_state=zeros(U, length(coeff)-1)
         Filter(Vector(coeff[end:-1:begin]), initial_state)
     end
 
     function filter_signal!(signal::AbstractVector, f::Filter{T, U})::Vector{U} where {T<:AbstractFloat, U}
-        d=vcat(f.initial_state, signal)
+        #d=vcat(f.initial_state, signal)
         signal_length=length(signal)
+        #println("signal length=",signal_length)
         tap=length(f.coeff_rev)
         extended_signal=vcat(f.initial_state, signal)
-
         result=map(1:signal_length) do i
             sum(extended_signal[i:i+tap-1].*f.coeff_rev)
         end
 
-        f.initial_state[:]=signal[signal_length-tap+2:end]
+        f.initial_state[:]=extended_signal[signal_length+1:end]
         result
     end
 
@@ -164,6 +172,11 @@ module Pfb
         y
     end
 
+    function calc_phase_factor(nch, d)
+        freq=fftfreq(nch)
+        exp.(-2.0im*pi*freq*d)
+    end
+
 
     function corr(x, y, fold_len)
         n=length(x)÷fold_len
@@ -172,6 +185,43 @@ module Pfb
         fftshift(sum(fft(x, 1).*conj.(fft(y, 1)), dims=2))
     end
 
-    
 
+    struct Delayer{T<:AbstractFloat}
+        pfb_ana::FilterBank{T}
+        remained_signal::Vector{T}
+    end
+
+    function Delayer(pfb::FilterBank{T}):: Delayer{T} where {T<:AbstractFloat}
+        nch=2*length(pfb.filters_even)
+        #@assert nch==length(phase_factor)
+        Delayer(deepcopy(pfb), Vector{T}())
+    end
+
+    function deepcopy(d::Delayer{T})::Delayer{T} where {T<:AbstractFloat}
+        Delayer(deepcopy(d.pfb_ana), deepcopy(d.remained_signal))
+    end
+
+    function copy(d::Delayer{T})::Delayer{T} where {T<:AbstractFloat}
+        Delayer(deepcopy(d.pfb_ana), deepcopy(d.remained_signal))
+    end
+
+
+    function apply_phase_factor!(channelized::AbstractMatrix, pf::AbstractVector)
+        for (c, p) in zip(eachrow(channelized), pf)
+            c.*=p
+        end
+    end
+
+    function delay!(signal::AbstractVector{T}, d::Delayer{T}, phase_factor::AbstractVector)::Matrix{Complex{T}} where {T<:AbstractFloat}
+        extended_signal=[d.remained_signal; signal]
+        n=length(d.pfb_ana.filters_even)
+        m=div(length(extended_signal), n)
+        consumed_signal_length=n*m
+        channelized=analyze!(extended_signal[begin:consumed_signal_length], d.pfb_ana)
+        apply_phase_factor!(channelized, phase_factor)
+        remained_length=length(extended_signal)-m*n
+        resize!(d.remained_signal, remained_length)
+        d.remained_signal[:]=extended_signal[consumed_signal_length+1:end]
+        channelized
+    end
 end # module
