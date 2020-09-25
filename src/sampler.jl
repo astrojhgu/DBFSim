@@ -26,7 +26,7 @@ module sampler
         end
     end
 
-    function array_output(signal::Vector, ant_loc::AbstractMatrix, ds::DownSampler, az, el)
+    function array_output(signal::Vector, ant_loc::AbstractMatrix, ds::DownSampler, az, el; sample_interval=sample_interval)
         dir=azel2xyz(az, el)
         delays=map(eachrow(ant_loc)) do p
             Int(round(p'*dir/light_speed/sample_interval*ds.ratio))
