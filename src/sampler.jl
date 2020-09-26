@@ -18,6 +18,43 @@ module sampler
         DownSampler(ratio, fc)
     end
 
+
+    struct StatedDownSampler
+        buffer::Vector{Float64}
+        ds::DownSampler
+        max_delay::Int
+    end
+
+    function StatedDownSampler(ds::DownSampler, max_delay::Int)
+        #buffer_len=(2*max_delay+1)+length(ds.filter_coeff_rev)-1
+        buffer=zeros(Float64, 0)
+        StatedDownSampler(buffer, ds, max_delay)
+    end
+
+    function sample!(signal, dss::StatedDownSampler, delay::Int=0)
+        @assert delay<=dss.max_delay
+        extended_signal=[dss.buffer; signal]
+        
+        prefered_buf_len=2*dss.max_delay+1+length(dss.ds.filter_coeff_rev)-1
+        actual_buf_len=length(extended_signal)-div(length(extended_signal)-prefered_buf_len, dss.ds.ratio)*dss.ds.ratio
+        actual_buf_len=min(actual_buf_len, length(extended_signal))
+
+        new_buffer=extended_signal[end-actual_buf_len+1:end]
+        #println("actual_buf_len:", actual_buf_len,"  ", length(new_buffer))
+        resize!(dss.buffer, actual_buf_len)
+        dss.buffer[:]=new_buffer
+        
+        first_point=dss.max_delay+1
+        last_point=length(extended_signal)-actual_buf_len+dss.max_delay
+        
+        #println("lastpoint=",last_point)
+        tap=length(dss.ds.filter_coeff_rev)
+        map(first_point:dss.ds.ratio:last_point) do i
+            sum(extended_signal[i+delay:i+delay+tap-1].*dss.ds.filter_coeff_rev)
+            #extended_signal[i+delay]
+        end
+    end
+
     function sample(signal, ds::DownSampler, skip::Int=0)
         first_point=1+skip
         tap=length(ds.filter_coeff_rev)
