@@ -3,7 +3,10 @@ module utils
     using AstroLib
     using DelimitedFiles
     
-    export meshgrid, azel2xyz
+    export meshgrid, azel2xyz, light_speed
+
+    const light_speed=2.99792458e8
+    const sample_interval=2.5e-9
 
     function meshgrid(x, y)
         X = [i for i in x, j in 1:length(y)]

@@ -1,6 +1,6 @@
 module DBFSim
-include("Pfb.jl")
 include("utils.jl")
+include("Pfb.jl")
 include("sampler.jl")
 include("Beamformer.jl")
 

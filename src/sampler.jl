@@ -1,10 +1,12 @@
 module sampler
     export sample
+    import Base:copy, deepcopy
 
     using FFTW
     using .. utils:azel2xyz
-    const light_speed=2.99792458e8
-    const sample_interval=2.5e-9
+    import .. utils
+    const light_speed=utils.light_speed
+    const sample_interval=utils.sample_interval
 
     struct DownSampler
         ratio::Int
@@ -24,6 +26,15 @@ module sampler
         ds::DownSampler
         max_delay::Int
     end
+
+    function copy(s::StatedDownSampler)::StatedDownSampler
+        StatedDownSampler(copy(s.buffer), s.ds, s.max_delay)
+    end
+
+    function deepcopy(s::StatedDownSampler)::StatedDownSampler
+        StatedDownSampler(deepcopy(s.buffer), s.ds, s.max_delay)
+    end
+
 
     function StatedDownSampler(ds::DownSampler, max_delay::Int)
         #buffer_len=(2*max_delay+1)+length(ds.filter_coeff_rev)-1
@@ -61,6 +72,19 @@ module sampler
         map(first_point:ds.ratio:length(signal)-tap) do i
             sum(signal[i:i+tap-1].*ds.filter_coeff_rev)
         end
+    end
+
+    function stated_array_output(signal::Vector, ant_loc::AbstractMatrix, sds::AbstractVector{StatedDownSampler}, az, el; sample_interval=sample_interval)
+        dir=azel2xyz(az, el)
+        delays=map(zip(eachrow(ant_loc), sds)) do (p, sds1)
+            df=-p'*dir/light_speed/sample_interval*sds1.ds.ratio
+            d=Int(round(df))
+            #println("delay: ", df)
+            d
+        end
+        hcat(map(zip(delays, sds)) do (d, ds)
+            sample!(signal, ds, d)
+        end...)
     end
 
     function array_output(signal::Vector, ant_loc::AbstractMatrix, ds::DownSampler, az, el; sample_interval=sample_interval)

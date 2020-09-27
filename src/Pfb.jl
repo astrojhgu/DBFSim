@@ -3,9 +3,14 @@ module Pfb
     using ThreadTools
     using SpecialFunctions
     using FFTW
+    using .. utils:azel2xyz
+    import .. utils
+    const light_speed=utils.light_speed
+    const sample_interval=utils.sample_interval
+
     import Base:copy, deepcopy
 
-    export filter_signal!, add_delay, coeff, FilterBank, Analyzer, Synthesizer, analyze!, synthesize!, Filter, corr
+    export filter_signal!, add_delay, coeff, FilterBank, Analyzer, Synthesizer, analyze!, synthesize!, Filter, corr, calc_delay_correction
 
     default_coeffs=Dict(8=>4.853,
     10=>4.775,
@@ -177,12 +182,30 @@ module Pfb
         exp.(-2.0im*pi*freq*d)
     end
 
+    function calc_delay_correction(ant_loc::AbstractVector, az, el; sample_interval=sample_interval)
+        dir=azel2xyz(az, el)
+        ant_loc'*dir/light_speed/sample_interval
+    end
+
+    function calc_delay_correction(ant_loc::AbstractMatrix, az, el; sample_interval=sample_interval)
+        collect(map(eachrow(ant_loc)) do x
+            calc_delay_correction(x, az, el; sample_interval=sample_interval)
+        end)
+    end
+
+    function calc_desired_phase_factor(ant_loc::AbstractMatrix, az, el, nch)
+        delays=calc_delay_correction(ant_loc, az, el)
+        hcat(map(delays) do d
+            calc_phase_factor(nch, d)
+        end...)
+    end
+
 
     function corr(x, y, fold_len)
         n=length(x)÷fold_len
         x=reshape(x[begin:n*fold_len], fold_len, n)
         y=reshape(y[begin:n*fold_len], fold_len, n)
-        fftshift(sum(fft(x, 1).*conj.(fft(y, 1)), dims=2))
+        fftshift(sum(fft(x, 1).*conj.(fft(y, 1)), dims=2))[:,1]
     end
 
 
