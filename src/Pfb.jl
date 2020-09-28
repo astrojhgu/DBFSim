@@ -74,16 +74,16 @@ module Pfb
     end
 
     function deepcopy(fb::FilterBank{T})::FilterBank{T} where {T<:AbstractFloat}
-        FilterBank(deepcopy(fb.filters_even), deepcopy(fb.filters_odd))
+        FilterBank(deepcopy(fb.filters_even), deepcopy(fb.filters_odd), deepcopy(fb.buffer))
     end
 
     function copy(fb::FilterBank{T})::FilterBank{T} where {T<:AbstractFloat}
-        FilterBank(deepcopy(fb.filter_even), deepcopy(fb.filter_odd))
+        FilterBank(deepcopy(fb.filter_even), deepcopy(fb.filter_odd), deepcopy(fb.buffer))
     end
 
     function Filter(coeff::AbstractVector{T}, u::Type{U})::Filter{T} where {T<:AbstractFloat, U}
         initial_state=zeros(U, length(coeff)-1)
-        Filter(Vector(coeff[end:-1:begin]), initial_state)
+        Filter(collect(coeff[end:-1:begin]), initial_state)
     end
 
     function filter_signal!(signal::AbstractVector, f::Filter{T, U})::Vector{U} where {T<:AbstractFloat, U}
