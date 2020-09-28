@@ -3,10 +3,10 @@ module Pfb
     using ThreadTools
     using SpecialFunctions
     using FFTW
-    using .. utils:azel2xyz
-    import .. utils
-    const light_speed=utils.light_speed
-    const sample_interval=utils.sample_interval
+    using .. Utils:azel2xyz
+    import .. Utils
+    const light_speed=Utils.light_speed
+    const sample_interval=Utils.sample_interval
 
     import Base:copy, deepcopy
 
@@ -70,6 +70,7 @@ module Pfb
     struct FilterBank{T<:AbstractFloat}
         filters_even::Vector{Filter{T, Complex{T}}}
         filters_odd::Vector{Filter{T, Complex{T}}}
+        buffer::Vector{T}
     end
 
     function deepcopy(fb::FilterBank{T})::FilterBank{T} where {T<:AbstractFloat}
@@ -109,7 +110,7 @@ module Pfb
         filters_odd=Vector{Filter{T, Complex{T}}}(map(1:n) do i
             Filter(coeff[i, :], Complex{T})::Filter{T, Complex{T}}
         end)
-        FilterBank(filters_even, filters_odd)
+        FilterBank(filters_even, filters_odd, Vector{T}())
     end
 
     function Synthesizer(coeff::AbstractMatrix{T}) where {T<:AbstractFloat}
@@ -122,13 +123,19 @@ module Pfb
             Filter(coeff[i, :], Complex{T})::Filter{T, Complex{T}}
         end)
 
-        FilterBank(filters_even, filters_odd)
+        FilterBank(filters_even, filters_odd, Vector{T}())
     end
 
 
     function analyze!(signal::AbstractVector{T}, pfb::FilterBank{T}) where {T<:AbstractFloat}
         n=length(pfb.filters_even)
-        m=div(length(signal), n)
+        extended_signal=[pfb.buffer; signal]
+        m=div(length(extended_signal), n)
+
+        resize!(pfb.buffer, length(extended_signal)-m*n)
+        
+        pfb.buffer.=extended_signal[begin+m*n:end]
+        signal=extended_signal[begin:begin+n*m-1]
         x1=Complex{T}.(reshape(signal, n, m))
         x2=copy(x1)
         for i in 1:n
@@ -163,7 +170,7 @@ module Pfb
             Y2[i, begin+1:2:end].*=-1
         end
 
-        reshape(Y1-Y2, n*m)
+        real.(reshape(Y1-Y2, n*m))
     end
 
     function add_delay(x, d)

@@ -1,12 +1,12 @@
-module sampler
+module Sampler
     export sample
     import Base:copy, deepcopy
 
     using FFTW
-    using .. utils:azel2xyz
-    import .. utils
-    const light_speed=utils.light_speed
-    const sample_interval=utils.sample_interval
+    using .. Utils:azel2xyz
+    import .. Utils
+    const light_speed=Utils.light_speed
+    const sample_interval=Utils.sample_interval
 
     struct DownSampler
         ratio::Int

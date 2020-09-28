@@ -21,11 +21,11 @@ comm = MPI.COMM_WORLD
 my_rank=MPI.Comm_rank(comm)
 nranks=MPI.Comm_size(comm)
 
-ant_loc=DBFSim.utils.load_ant_loc("antenna_positions.txt")
+ant_loc=DBFSim.Utils.load_ant_loc("antenna_positions.txt")
 
 
-ds=DBFSim.sampler.DownSampler(256, 2048)
-az, el, x, y, z=DBFSim.utils.sph_grid(1000, 500);
+ds=DBFSim.Sampler.DownSampler(256, 2048)
+az, el, x, y, z=DBFSim.Utils.sph_grid(1000, 500);
 
 function write_msg(fname, s)
     open(fname, "a") do f
@@ -96,9 +96,9 @@ else
             #signal=randn(4096*4096*1)
             signal=gen_sig(4096*4096*1)
 
-            result=DBFSim.sampler.array_output(signal, ant_loc, ds, az1, el1)
+            result=DBFSim.Sampler.array_output(signal, ant_loc, ds, az1, el1)
             output=sum(result; dims=2)
-            #signal1=DBFSim.sampler.sample(signal, ds, 0)
+            #signal1=DBFSim.Sampler.sample(signal, ds, 0)
             #input=real.(DBFSim.Pfb.corr(signal1, signal1, 16384)[8193:end])
             output=real.(DBFSim.Pfb.corr(output, output, 16384)[8193:end])
             #output./input

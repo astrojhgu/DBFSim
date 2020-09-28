@@ -1,4 +1,4 @@
-module utils
+module Utils
     using WCS
     using AstroLib
     using DelimitedFiles
