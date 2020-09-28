@@ -95,7 +95,7 @@ module Sampler
         delays.-=minimum(delays)
         #println(delays)
 
-        result=Vector(map(delays) do d
+        result=collect(map(delays) do d
             sample(signal, ds, d)
         end)
 
