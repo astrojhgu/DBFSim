@@ -134,5 +134,22 @@ module Utils
             al
         end
     end
+
+    mutable struct ChunkedBuffer{T}
+        n::Int
+        buffer::Vector{T}
+    end
+
+    function ChunkedBuffer(::Type{T}, n::Int)::ChunkedBuffer{T} where {T}
+        ChunkedBuffer{T}(n, Vector{T}())
+    end
+
+    function (cb::ChunkedBuffer{T})(x::AbstractVector{T})::Vector{T} where {T}
+        extended_x=[cb.buffer;x]
+        output_length=div(length(extended_x), cb.n)*cb.n
+        rest_length=length(extended_x)-output_length
+        cb.buffer=extended_x[output_length+1:end]
+        extended_x[1:output_length]
+    end
    
 end
