@@ -10,7 +10,7 @@ module Pfb
 
     import Base:copy, deepcopy
 
-    export filter_signal!, add_delay, coeff, FilterBank, Analyzer, Synthesizer, analyze!, synthesize!, Filter, corr, calc_delay_correction
+    export filter_signal!, add_delay, coeff, FilterBank, Analyzer, Synthesizer, analyze!, analyze_mt!, synthesize!, synthesize_mt!, Filter, corr, calc_delay_correction
 
     default_coeffs=Dict(8=>4.853,
     10=>4.775,
@@ -154,6 +154,34 @@ module Pfb
         result
     end
 
+    function analyze_mt!(signal::AbstractVector{T}, pfb::FilterBank{T}) where {T<:AbstractFloat}
+        n=length(pfb.filters_even)
+        extended_signal=[pfb.buffer; signal]
+        m=div(length(extended_signal), n)
+
+        resize!(pfb.buffer, length(extended_signal)-m*n)
+        
+        pfb.buffer.=extended_signal[begin+m*n:end]
+        signal=extended_signal[begin:begin+n*m-1]
+        x1=Complex{T}.(reshape(signal, n, m))
+        x2=copy(x1)
+        ThreadTools.@threads for i in 1:n
+            x2[i, :].*=exp(1im*pi*(i-1)/n)
+            x2[i, begin+1:2:end].*=-1.0
+            x1[i, :]=filter_signal!(x1[i, :], pfb.filters_even[i])
+            x2[i, :]=filter_signal!(x2[i, :], pfb.filters_odd[i])
+        end
+        
+
+        x1=ifft(x1, 1)*n
+        x2=ifft(x2, 1)*n
+        result=Matrix{Complex{T}}(undef, n*2, m)
+        result[begin:2:end, :]=x1
+        result[begin+1:2:end, :] = x2
+        result
+    end
+
+
 
     function synthesize!(signal::AbstractMatrix{Complex{T}}, pfb::FilterBank{T}) where {T<:AbstractFloat}
         n=length(pfb.filters_even)
@@ -172,6 +200,25 @@ module Pfb
 
         real.(reshape(Y1-Y2, n*m))
     end
+
+    function synthesize_mt!(signal::AbstractMatrix{Complex{T}}, pfb::FilterBank{T}) where {T<:AbstractFloat}
+        n=length(pfb.filters_even)
+        m=size(signal, 2)
+        y1=signal[begin:2:end, :]
+        y2=signal[begin+1:2:end, :]
+        Y1=fft(y1, 1)*n
+        Y2=fft(y2, 1)*n
+        ThreadTools.@threads for i in 1:n
+            Y1[i, :]=filter_signal!(Y1[i, :], pfb.filters_even[i])
+            Y2[i, :]=filter_signal!(Y2[i, :], pfb.filters_odd[i])
+
+            Y2[i, :]*=exp(-1im*pi*(i-1)/n)
+            Y2[i, begin+1:2:end].*=-1
+        end
+
+        real.(reshape(Y1-Y2, n*m))
+    end
+
 
     function add_delay(x, d)
         nch=size(x, 1)
