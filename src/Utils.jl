@@ -3,7 +3,7 @@ module Utils
     using AstroLib
     using DelimitedFiles
     
-    export meshgrid, azel2xyz, light_speed
+    export meshgrid, azel2xyz, light_speed, add_neg_freq_no_dc
 
     const light_speed=2.99792458e8
     const sample_interval=2.5e-9
@@ -151,5 +151,14 @@ module Utils
         cb.buffer=extended_x[output_length+1:end]
         extended_x[1:output_length]
     end
-   
+
+    function add_neg_freq_no_dc(input::AbstractArray{Complex{T}, N})::Array{Complex{T}, N} where {T, N}
+        input_size=size(input)  
+        vcat(zeros(input_size[2:end]...)', input, conj.(reverse(input[begin:end-1, axes(input)[2:end]...], dims=1)))
+   end   
+
+    function add_neg_freq_no_dc(input::AbstractVector{Complex{T}})::Vector{Complex{T}} where {T}
+        input_size=size(input)  
+        vcat(zeros(), input, conj.(reverse(input[begin:end-1, axes(input)[2:end]...], dims=1)))
+    end
 end
