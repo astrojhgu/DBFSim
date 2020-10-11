@@ -154,11 +154,12 @@ module Utils
 
     function add_neg_freq_no_dc(input::AbstractArray{Complex{T}, N})::Array{Complex{T}, N} where {T, N}
         input_size=size(input)  
-        vcat(zeros(input_size[2:end]...)', input, conj.(reverse(input[begin:end-1, axes(input)[2:end]...], dims=1)))
-   end   
+        vcat(zeros(input_size[2:end]...)', input, conj.(input[end-1:-1:begin, axes(input)[2:end]...]))
+    end
 
     function add_neg_freq_no_dc(input::AbstractVector{Complex{T}})::Vector{Complex{T}} where {T}
         input_size=size(input)  
-        vcat(zeros(), input, conj.(reverse(input[begin:end-1, axes(input)[2:end]...], dims=1)))
+        #vcat(zeros(), input, conj.(reverse(input[begin:end-1, axes(input)[2:end]...], dims=1)))
+        vcat(zeros(), input, conj.(input[end-1:-1:begin, axes(input)[2:end]...], dims=1))
     end
 end

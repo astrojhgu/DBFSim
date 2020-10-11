@@ -172,9 +172,12 @@ module Pfb
             x2[i, :]=filter_signal!(x2[i, :], pfb.filters_odd[i])
         end
         
+        #x1=ifft(x1, 1)*n
+        #x2=ifft(x2, 1)*n
+        x1,x2=tmap1([x1, x2]) do x
+            ifft(x, 1)*n
+        end
 
-        x1=ifft(x1, 1)*n
-        x2=ifft(x2, 1)*n
         result=Matrix{Complex{T}}(undef, n*2, m)
         result[begin:2:end, :]=x1
         result[begin+1:2:end, :] = x2
@@ -206,8 +209,14 @@ module Pfb
         m=size(signal, 2)
         y1=signal[begin:2:end, :]
         y2=signal[begin+1:2:end, :]
-        Y1=fft(y1, 1)*n
-        Y2=fft(y2, 1)*n
+        println("fft")
+        Y1,Y2=tmap1([y1, y2]) do y
+            fft(y, 1)*n
+        end
+        #Y1=fft(y1, 1)*n
+        
+        #Y2=fft(y2, 1)*n
+        println("filter")
         ThreadTools.@threads for i in 1:n
             Y1[i, :]=filter_signal!(Y1[i, :], pfb.filters_even[i])
             Y2[i, :]=filter_signal!(Y2[i, :], pfb.filters_odd[i])
@@ -215,7 +224,7 @@ module Pfb
             Y2[i, :]*=exp(-1im*pi*(i-1)/n)
             Y2[i, begin+1:2:end].*=-1
         end
-
+        println("reshape")
         real.(reshape(Y1-Y2, n*m))
     end
 
